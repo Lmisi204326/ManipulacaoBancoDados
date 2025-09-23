@@ -1,0 +1,34 @@
+---
+title: "Untitled"
+format: html
+editor: visual
+---
+
+```{r}
+tempo_csv_base <- system.time({
+  dados1 <- read.csv("flights.csv")
+})
+
+print(tempo_csv_base)
+```
+
+```{python}
+import pandas as pd
+import time
+
+inicio = time.time()
+
+df = pd.read_csv("flights.csv")
+
+fim = time.time()
+print(f"Tempo de leitura do CSV: {fim - inicio:.4f} segundos")
+```
+
+```{r}
+library(readr)
+tempo_csv_readr <- system.time({
+  dados2 <- read_csv("flights.csv")
+})
+
+print(tempo_csv_readr)
+```

@@ -1,0 +1,143 @@
+---
+title: "LUca Misi Rocha"
+format: pdf
+editor: visual
+---
+
+#lab6
+```{r}
+# Carregar os pacotes necessários
+library(RSQLite)
+library(dplyr)
+library(ggplot2)
+library(knitr)
+# 1. Definir o caminho do arquivo
+# Supondo que o arquivo disco.db está no seu diretório de trabalho atual
+path <- getwd()
+fname <- file.path(path, "disco.db")
+
+# 2. Conectar ao banco de dados
+conn <- dbConnect(RSQLite::SQLite(), fname)
+
+# 3. Listar tabelas existentes
+tabelas <- dbListTables(conn)
+print("Tabelas existentes no banco de dados:")
+print(tabelas)
+
+# 4. Nomes das colunas da tabela customers
+colunas_customers <- dbListFields(conn, "customers")
+print("Colunas da tabela customers:")
+print(colunas_customers)
+
+# 5. Número total de clientes cadastrados
+total_clientes <- dbGetQuery(conn, "SELECT COUNT(*) as total FROM customers")
+print(paste("Total de clientes cadastrados:", total_clientes$total))
+
+# 6. Número de países diferentes
+paises_diferentes <- dbGetQuery(conn, "SELECT COUNT(DISTINCT Country) as num_paises FROM customers")
+print(paste("Número de países diferentes:", paises_diferentes$num_paises))
+
+# 7. Clientes por país (ordenado decrescentemente)
+clientes_por_pais <- dbGetQuery(conn, "
+    SELECT Country, COUNT(*) as total_clientes 
+    FROM customers 
+    GROUP BY Country 
+    ORDER BY total_clientes DESC")
+print("Clientes por país:")
+print(clientes_por_pais)
+
+# 8. Top 5 países com mais clientes
+top5_paises <- dbGetQuery(conn, "
+    SELECT Country, COUNT(*) as total_clientes 
+    FROM customers 
+    GROUP BY Country 
+    ORDER BY total_clientes DESC 
+    LIMIT 5")
+print("Top 5 países com mais clientes:")
+print(top5_paises)
+
+# 9. Países com 6 letras no nome
+paises_6_letras <- dbGetQuery(conn, "
+    SELECT DISTINCT Country 
+    FROM customers 
+    WHERE LENGTH(Country) = 6")
+kable(paises_6_letras, caption = "Países com 6 letras no nome")
+
+# 10. Músicas compradas por clientes brasileiros
+# Supondo que as tabelas sejam: customers, invoices, invoice_items, tracks
+musicas_brasileiros <- dbGetQuery(conn, "
+    SELECT DISTINCT t.Name as musica, ar.Name as artista, al.Title as album
+    FROM customers c
+    INNER JOIN invoices i ON c.CustomerId = i.CustomerId
+    INNER JOIN invoice_items ii ON i.InvoiceId = ii.InvoiceId
+    INNER JOIN tracks t ON ii.TrackId = t.TrackId
+    INNER JOIN albums al ON t.AlbumId = al.AlbumId
+    INNER JOIN artists ar ON al.ArtistId = ar.ArtistId
+    WHERE c.Country = 'Brazil'
+    ORDER BY ar.Name, t.Name")
+
+kable(head(musicas_brasileiros, 10), caption = "Primeiras 10 músicas compradas por clientes brasileiros")
+
+
+```
+
+
+#a)
+```{r}
+# Álbum mais tocado por país
+album_mais_tocado <- dbGetQuery(conn, "
+    WITH PlayCounts AS (
+        SELECT 
+            c.Country,
+            al.Title as Album,
+            ar.Name as Artist,
+            COUNT(ii.InvoiceLineId) as PlayCount,
+            ROW_NUMBER() OVER (PARTITION BY c.Country ORDER BY COUNT(ii.InvoiceLineId) DESC) as Rank
+        FROM customers c
+        INNER JOIN invoices i ON c.CustomerId = i.CustomerId
+        INNER JOIN invoice_items ii ON i.InvoiceId = ii.InvoiceId
+        INNER JOIN tracks t ON ii.TrackId = t.TrackId
+        INNER JOIN albums al ON t.AlbumId = al.AlbumId
+        INNER JOIN artists ar ON al.ArtistId = ar.ArtistId
+        GROUP BY c.Country, al.AlbumId
+    )
+    SELECT Country, Album, Artist, PlayCount
+    FROM PlayCounts
+    WHERE Rank = 1
+    ORDER BY PlayCount DESC")
+
+kable(album_mais_tocado, caption = "Álbum mais tocado por país")
+```
+
+
+#b)
+```{r}
+# Artista mais tocado por país
+artista_mais_tocado <- dbGetQuery(conn, "
+    WITH ArtistCounts AS (
+        SELECT 
+            c.Country,
+            ar.Name as Artist,
+            COUNT(ii.InvoiceLineId) as PlayCount,
+            ROW_NUMBER() OVER (PARTITION BY c.Country ORDER BY COUNT(ii.InvoiceLineId) DESC) as Rank
+        FROM customers c
+        INNER JOIN invoices i ON c.CustomerId = i.CustomerId
+        INNER JOIN invoice_items ii ON i.InvoiceId = ii.InvoiceId
+        INNER JOIN tracks t ON ii.TrackId = t.TrackId
+        INNER JOIN albums al ON t.AlbumId = al.AlbumId
+        INNER JOIN artists ar ON al.ArtistId = ar.ArtistId
+        GROUP BY c.Country, ar.ArtistId
+    )
+    SELECT Country, Artist, PlayCount
+    FROM ArtistCounts
+    WHERE Rank = 1
+    ORDER BY PlayCount DESC")
+
+kable(artista_mais_tocado, caption = "Artista mais tocado por país")
+
+# 11. Desconectar do banco de dados
+dbDisconnect(conn)
+print("Conexão com o banco de dados fechada.")
+```
+
+

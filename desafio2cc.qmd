@@ -1,0 +1,377 @@
+---
+title: "Untitled"
+format: html
+editor: visual
+---
+
+```{python}
+import pandas as pd
+import numpy as np
+import zipfile
+from io import StringIO
+import matplotlib.pyplot as plt
+import seaborn as sns
+from datetime import datetime
+import calendar
+
+```
+
+```{python}
+df = pd.read_csv('flights.csv')
+```
+
+```{python}
+# Estatísticas suficientes
+total_flights = len(df)
+delayed_flights = len(df[df['ARRIVAL_DELAY'] > 10])
+
+# Cálculo do percentual
+percentual = (delayed_flights / total_flights) * 100
+
+print(f"Total de voos: {total_flights}")
+print(f"Voos atrasados: {delayed_flights}")
+print(f"Percentual de atrasos: {percentual:.2f}%")
+```
+
+```{python}
+def getStats(input_df, pos=None):
+    """
+    Função que processa um chunk de dados seguindo a lógica do dplyr
+    
+    Args:
+        input_df: DataFrame com os dados do chunk
+        pos: Argumento de posicionamento (não utilizado, mas necessário para chunked reading)
+    
+    Returns:
+        Tibble (DataFrame) com estatísticas suficientes
+    """
+    # 1. Filtrar apenas as companhias de interesse (equivalente a filter() do dplyr)
+    airlines_of_interest = ['AA', 'DL', 'UA', 'US']
+    df_filtered = input_df[input_df['AIRLINE'].isin(airlines_of_interest)].copy()
+    
+    # 2. Remover observações com valores faltantes (equivalente a drop_na() do dplyr)
+    # Campos de interesse: AIRLINE, YEAR, MONTH, DAY, ARR_DELAY (ou ARRIVAL_DELAY)
+    required_cols = ['AIRLINE', 'YEAR', 'MONTH', 'DAY']
+    
+    # Verificar qual coluna de atraso existe
+    if 'ARR_DELAY' in df_filtered.columns:
+        required_cols.append('ARR_DELAY')
+    elif 'ARRIVAL_DELAY' in df_filtered.columns:
+        required_cols.append('ARRIVAL_DELAY')
+    else:
+        # Tentar encontrar coluna de atraso
+        delay_cols = [col for col in df_filtered.columns if 'DELAY' in col or 'ARR' in col]
+        if delay_cols:
+            required_cols.append(delay_cols[0])
+        else:
+            raise ValueError("Coluna de atraso não encontrada")
+    
+    df_clean = df_filtered.dropna(subset=required_cols)
+    
+    # 3. Agrupar por dia, mês e cia aérea (equivalente a group_by() do dplyr)
+    grouped = df_clean.groupby(['YEAR', 'MONTH', 'DAY', 'AIRLINE'])
+    
+    # 4. Calcular estatísticas suficientes (equivalente a summarize() do dplyr)
+    # Para ARR_DELAY
+    if 'ARR_DELAY' in df_clean.columns:
+        stats = grouped.agg(
+            total_voos=('ARR_DELAY', 'count'),
+            voos_atrasados=('ARR_DELAY', lambda x: (x > 10).sum())
+        ).reset_index()
+    # Para ARRIVAL_DELAY  
+    elif 'ARRIVAL_DELAY' in df_clean.columns:
+        stats = grouped.agg(
+            total_voos=('ARRIVAL_DELAY', 'count'),
+            voos_atrasados=('ARRIVAL_DELAY', lambda x: (x > 10).sum())
+        ).reset_index()
+    # Para outras colunas de atraso
+    else:
+        delay_col = [col for col in required_cols if col not in ['AIRLINE', 'YEAR', 'MONTH', 'DAY']][0]
+        stats = grouped.agg(
+            total_voos=(delay_col, 'count'),
+            voos_atrasados=(delay_col, lambda x: (x > 10).sum())
+        ).reset_index()
+    
+    # Converter para tibble-like DataFrame (mantendo metadatos)
+    stats = pd.DataFrame(stats)
+    
+    return stats
+  
+  
+  
+statsdf = getStats(df)
+```
+
+```{python}
+def read_flights_chunked(file_path, chunk_size=100000):
+    """
+    Função equivalente ao readr::read_***_chunked do R
+    
+    Args:
+        file_path: Caminho do arquivo ZIP
+        chunk_size: Tamanho do chunk (padrão: 100.000 registros)
+    
+    Returns:
+        DataFrame consolidado com todas as estatísticas
+    """
+    # Primeiro, identificar as colunas disponíveis e a coluna de atraso
+    with zipfile.ZipFile(file_path, 'r') as z:
+        with z.open('flights.csv') as f:
+            # Ler apenas o header para identificar colunas
+            header = pd.read_csv(f, nrows=0)
+    
+    # Definir colunas de interesse baseado no que existe no arquivo
+    colunas_base = ['YEAR', 'MONTH', 'DAY', 'AIRLINE']
+    coluna_delay = None
+    
+    for col in ['ARR_DELAY', 'ARRIVAL_DELAY']:
+        if col in header.columns:
+            coluna_delay = col
+            break
+    
+    if coluna_delay is None:
+        # Procurar coluna de atraso alternativa
+        delay_cols = [col for col in header.columns if 'DELAY' in col and 'ARR' in col]
+        if delay_cols:
+            coluna_delay = delay_cols[0]
+        else:
+            raise ValueError("Nenhuma coluna de atraso de chegada encontrada")
+    
+    colunas_interesse = colunas_base + [coluna_delay]
+    
+    # Definir tipos de colunas (equivalente ao col_types do readr)
+    col_types = {
+        'YEAR': 'int32',
+        'MONTH': 'int32', 
+        'DAY': 'int32',
+        'AIRLINE': 'category',
+        coluna_delay: 'float32'
+    }
+    
+    print(f"Colunas a serem lidas: {colunas_interesse}")
+    print(f"Tipos de colunas: {col_types}")
+    
+    # Lista para acumular resultados
+    accumulated_stats = []
+    
+    # Função de callback (equivalente à função do readr)
+    def process_chunk(chunk, accumulator):
+        """Callback function para processar cada chunk"""
+        print(f"Processando chunk com {len(chunk)} registros...")
+        stats = getStats(chunk)
+        if len(stats) > 0:
+            accumulator.append(stats)
+    
+    # Ler o arquivo em chunks
+    with zipfile.ZipFile(file_path, 'r') as z:
+        with z.open('flights.csv') as f:
+            chunk_reader = pd.read_csv(
+                f,
+                usecols=colunas_interesse,
+                dtype=col_types,
+                chunksize=chunk_size
+            )
+            
+            for i, chunk in enumerate(chunk_reader):
+                print(f"Chunk {i + 1}: {len(chunk)} registros")
+                process_chunk(chunk, accumulated_stats)
+    
+    # Consolidar todos os resultados
+    if accumulated_stats:
+        all_stats = pd.concat(accumulated_stats, ignore_index=True)
+        
+        # Agrupar novamente para consolidar estatísticas finais
+        final_stats = all_stats.groupby(['YEAR', 'MONTH', 'DAY', 'AIRLINE']).agg({
+            'total_voos': 'sum',
+            'voos_atrasados': 'sum'
+        }).reset_index()
+        
+        return final_stats
+    else:
+        return pd.DataFrame()
+
+
+df2 =  read_flights_chunked('flights.csv', chunk_size=100000):
+```
+
+```{python}
+def computeStats(stats_df):
+    """
+    Combina as estatísticas suficientes e calcula o percentual de atraso
+    
+    Args:
+        stats_df: DataFrame com estatísticas suficientes (YEAR, MONTH, DAY, AIRLINE, total_voos, voos_atrasados)
+    
+    Returns:
+        Tibble (DataFrame) com colunas: Cia, Data, Perc
+    """
+    # Verificar se as colunas necessárias estão presentes
+    required_cols = ['YEAR', 'MONTH', 'DAY', 'AIRLINE', 'total_voos', 'voos_atrasados']
+    missing_cols = [col for col in required_cols if col not in stats_df.columns]
+    
+    if missing_cols:
+        raise ValueError(f"Colunas necessárias não encontradas: {missing_cols}")
+    
+    # Fazer uma cópia para não modificar o original
+    df = stats_df.copy()
+    
+    # 1. Calcular o percentual de atraso
+    df['Perc'] = df['voos_atrasados'] / df['total_voos']
+    
+    # Garantir que o percentual está no intervalo [0, 1]
+    df['Perc'] = df['Perc'].clip(0, 1)
+    
+    # 2. Criar a coluna de data no formato AAAA-MM-DD
+    df['Data'] = pd.to_datetime(
+        df[['YEAR', 'MONTH', 'DAY']].rename(
+            columns={'YEAR': 'year', 'MONTH': 'month', 'DAY': 'day'}
+        )
+    )
+    
+    # 3. Selecionar apenas as colunas necessárias e renomear
+    result = df[['AIRLINE', 'Data', 'Perc']].rename(
+        columns={'AIRLINE': 'Cia'}
+    )
+    
+    # Ordenar por Data e Cia para melhor organização
+    result = result.sort_values(['Data', 'Cia']).reset_index(drop=True)
+    
+    return result
+  
+CS = computeStats(statsdf)
+```
+
+```{python}
+# Definir a paleta de cores (equivalente ao scale_fill_gradient do ggplot2)
+def create_custom_palette():
+    """Cria paleta de cores gradiente equivalente ao scale_fill_gradient"""
+    colors = ["#4575b4", "#d73027"]  # Azul para vermelho
+    return LinearSegmentedColormap.from_list("custom_gradient", colors)
+
+# Paleta global
+pal = create_custom_palette()
+
+# Função baseCalendario (equivalente ao ggcal)
+def baseCalendario(stats, cia):
+    """
+    Cria base para calendário de uma companhia aérea específica
+    
+    Args:
+        stats: DataFrame com colunas Cia, Data, Perc
+        cia: Sigla da companhia aérea (AA, DL, UA, US)
+    
+    Returns:
+        DataFrame preparado para visualização de calendário
+    """
+    # Filtrar pela companhia
+    cia_data = stats[stats['Cia'] == cia].copy()
+    
+    if len(cia_data) == 0:
+        print(f"Nenhum dado encontrado para a companhia {cia}")
+        return pd.DataFrame()
+    
+    # Extrair componentes da data
+    cia_data['year'] = cia_data['Data'].dt.year
+    cia_data['month'] = cia_data['Data'].dt.month
+    cia_data['day'] = cia_data['Data'].dt.day
+    cia_data['weekday'] = cia_data['Data'].dt.weekday  # 0=segunda, 6=domingo
+    cia_data['month_name'] = cia_data['Data'].dt.month_name()
+    cia_data['week_of_month'] = cia_data.apply(
+        lambda x: (x['day'] - 1 + datetime(x['year'], x['month'], 1).weekday()) // 7 + 1, 
+        axis=1
+    )
+    
+    print(f"Base de calendário criada para {cia}: {len(cia_data)} dias com dados")
+    return cia_data
+
+# Função para plotar calendário completo
+def plot_calendario_completo(calendario_data, cia_nome):
+    """
+    Plota mapa de calor em formato de calendário para um ano completo
+    """
+    if len(calendario_data) == 0:
+        print(f"Nenhum dado para plotar calendário de {cia_nome}")
+        return
+    
+    # Determinar o ano (assumindo que todos os dados são do mesmo ano)
+    year = calendario_data['year'].iloc[0]
+    
+    # Criar figura com subplots para cada mês
+    fig, axes = plt.subplots(3, 4, figsize=(20, 15))
+    axes = axes.flatten()
+    fig.suptitle(f'Calendário de Atrasos - {cia_nome} ({year})\nPercentual de voos com atraso > 10 minutos', 
+                 fontsize=16, fontweight='bold')
+    
+    for month in range(1, 13):
+        ax = axes[month - 1]
+        
+        # Dados do mês
+        month_data = calendario_data[calendario_data['month'] == month].copy()
+        month_name = calendar.month_name[month]
+        
+        if len(month_data) == 0:
+            ax.text(0.5, 0.5, f'Sem dados\n{month_name}', 
+                   ha='center', va='center', transform=ax.transAxes, fontsize=12)
+            ax.set_title(month_name, fontsize=14, fontweight='bold')
+            ax.set_xticks([])
+            ax.set_yticks([])
+            continue
+        
+        # Criar matriz para o heatmap do mês
+        first_day = datetime(year, month, 1)
+        days_in_month = calendar.monthrange(year, month)[1]
+        
+        # Matriz 6x7 (semanas x dias da semana)
+        heatmap_matrix = np.full((6, 7), np.nan)
+        day_labels = np.full((6, 7), '', dtype=object)
+        
+        for day in range(1, days_in_month + 1):
+            current_date = datetime(year, month, day)
+            weekday = current_date.weekday()  # 0=segunda, 6=domingo
+            week_num = (day - 1 + first_day.weekday()) // 7
+            
+            # Buscar dados para este dia
+            day_data = month_data[month_data['day'] == day]
+            if not day_data.empty:
+                perc_value = day_data['Perc'].iloc[0]
+                heatmap_matrix[week_num, weekday] = perc_value
+                day_labels[week_num, weekday] = f"{day}\n{perc_value:.1%}"
+            else:
+                day_labels[week_num, weekday] = str(day)
+        
+        # Plotar heatmap
+        im = ax.imshow(heatmap_matrix, cmap=pal, vmin=0, vmax=1, aspect='auto')
+        
+        # Adicionar labels dos dias
+        for i in range(6):
+            for j in range(7):
+                if day_labels[i, j]:
+                    # Cor do texto baseado no fundo
+                    bg_color = im.cmap(im.norm(heatmap_matrix[i, j] if not np.isnan(heatmap_matrix[i, j]) else 0.5))
+                    text_color = 'white' if np.mean(bg_color[:3]) < 0.6 else 'black'
+                    
+                    ax.text(j, i, day_labels[i, j], ha='center', va='center', 
+                           color=text_color, fontsize=8, fontweight='bold')
+        
+        # Configurar eixos
+        ax.set_title(month_name, fontsize=14, fontweight='bold')
+        ax.set_xticks(range(7))
+        ax.set_xticklabels(['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'], fontsize=10)
+        ax.set_yticks(range(6))
+        ax.set_yticklabels(['Sem 1', 'Sem 2', 'Sem 3', 'Sem 4', 'Sem 5', 'Sem 6'], fontsize=10)
+        
+        # Adicionar grid
+        ax.grid(True, color='white', linestyle='-', linewidth=0.5, alpha=0.3)
+    
+    # Ajustar layout
+    plt.tight_layout()
+    plt.subplots_adjust(top=0.93)
+    
+    # Adicionar barra de cores
+    cbar_ax = fig.add_axes([0.95, 0.15, 0.02, 0.7])
+    cbar = fig.colorbar(im, cax=cbar_ax)
+    cbar.set_label('Percentual de Atrasos', fontsize=12)
+    
+    plt.show()
+
+```

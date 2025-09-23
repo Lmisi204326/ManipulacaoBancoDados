@@ -1,0 +1,22 @@
+---
+title: "desafio 4"
+format: html
+editor: visual
+--- disables the printing of code (only output is displayed).
+---
+
+
+```{r}
+library(tidyverse)
+library(lubridate)
+library(leaflet)
+library(htmltools)
+library(htmlwidgets)
+library(readr)
+```
+
+
+```{r}
+flights = read_csv(flights.csv)
+```
+
