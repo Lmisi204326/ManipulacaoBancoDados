@@ -1,0 +1,105 @@
+---
+title: "Untitled"
+format: html
+editor: visual
+---
+
+```{r}
+library(RSQLite)
+
+# Conectar ao banco de dados
+conn <- dbConnect(SQLite(), "uwmadison.sqlite3")
+```
+
+```{r}
+
+# Professores STAT
+professores <- dbGetQuery(conn, "
+  SELECT DISTINCT i.name
+FROM instructors i
+JOIN teachings t 
+    ON i.id = t.instructor_id
+JOIN sections s 
+    ON t.section_uuid = s.uuid
+JOIN course_offerings co 
+    ON s.course_offering_uuid = co.uuid
+JOIN subject_memberships sm 
+    ON co.uuid = sm.course_offering_uuid
+JOIN subjects sub 
+    ON sm.subject_code = sub.code
+WHERE sub.abbreviation = 'STAT';
+
+")
+
+# Contagem
+contagem <- dbGetQuery(conn, "
+  SELECT COUNT(DISTINCT i.id) AS total_professores
+  FROM instructors i
+  JOIN teachings t 
+      ON i.id = t.instructor_id
+  JOIN sections s 
+      ON t.section_uuid = s.uuid
+  JOIN course_offerings co 
+      ON s.course_offering_uuid = co.uuid
+  JOIN subject_memberships sm 
+      ON co.uuid = sm.course_offering_uuid
+  JOIN subjects sub 
+      ON sm.subject_code = sub.code
+  WHERE sub.abbreviation = 'STAT';
+")
+
+head(professores)
+contagem
+
+
+```
+
+```{r}
+professor_d <- dbGetQuery(conn,"SELECT i.name,
+       AVG(
+         (4.0*g.a_count + 3.5*g.ab_count + 3.0*g.b_count + 2.5*g.bc_count +
+          2.0*g.c_count + 1.0*g.d_count + 0.0*g.f_count) * 1.0 /
+         NULLIF((g.a_count+g.ab_count+g.b_count+g.bc_count+
+                 g.c_count+g.d_count+g.f_count),0)
+       ) AS gpa_medio
+FROM instructors i
+JOIN teachings t       ON i.id = t.instructor_id
+JOIN sections s        ON t.section_uuid = s.uuid
+JOIN course_offerings co ON s.course_offering_uuid = co.uuid
+JOIN grade_distributions g ON co.uuid = g.course_offering_uuid
+JOIN subject_memberships sm ON co.uuid = sm.course_offering_uuid
+JOIN subjects sub      ON sm.subject_code = sub.code
+WHERE sub.abbreviation = 'STAT'
+GROUP BY i.name
+ORDER BY gpa_medio ASC; 
+")
+head(professor_d)
+
+```
+
+```{r}
+discipline_d <-dbGetQuery(conn, "SELECT c.name,
+       AVG(
+         (4.0*g.a_count + 3.5*g.ab_count + 3.0*g.b_count + 2.5*g.bc_count +
+          2.0*g.c_count + 1.0*g.d_count + 0.0*g.f_count) * 1.0 /
+         NULLIF((g.a_count+g.ab_count+g.b_count+g.bc_count+
+                 g.c_count+g.d_count+g.f_count),0)
+       ) AS gpa_medio
+FROM courses c
+JOIN course_offerings co ON c.uuid = co.course_uuid
+JOIN grade_distributions g ON co.uuid = g.course_offering_uuid
+JOIN subject_memberships sm ON co.uuid = sm.course_offering_uuid
+JOIN subjects sub      ON sm.subject_code = sub.code
+WHERE sub.abbreviation = 'STAT'
+GROUP BY c.name
+ORDER BY gpa_medio ASC; 
+                          ")
+head(discipline_d)
+```
+
+```{r}
+dbDisconnect(conn)
+
+```
+
+
