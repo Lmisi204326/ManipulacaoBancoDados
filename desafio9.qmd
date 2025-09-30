@@ -1,0 +1,102 @@
+---
+title: "desafio9"
+format: html
+editor: visual
+---
+
+```{r}
+# Carregar bibliotecas necessárias
+library(DBI)
+library(RSQLite)
+library(readr)
+library(dplyr)
+
+# Criar arquivo de banco de dados SQLite
+con <- dbConnect(SQLite(), "voos.sqlite3")
+```
+
+
+```{r}
+# Ler e depositar dados das airlines
+airlines <- read_csv("airlines.csv")
+dbWriteTable(con, "airlines", airlines, overwrite = TRUE)
+
+# Ler e depositar dados dos airports
+airports <- read_csv("airports.csv")
+dbWriteTable(con, "airports", airports, overwrite = TRUE)
+```
+
+
+```{r}
+# Criar função lerDados
+lerDados <- function(input, pos) {
+  # Filtrar apenas os aeroportos especificados
+  filtered_data <- input %>%
+    filter(ORIGIN_AIRPORT %in% c("BWI", "MIA", "SEA", "SFO", "JFK") | 
+           DESTINATION_AIRPORT %in% c("BWI", "MIA", "SEA", "SFO", "JFK"))
+  
+  # Escrever no banco de dados
+  if (nrow(filtered_data) > 0) {
+    dbWriteTable(con, "flights", filtered_data, append = (pos > 1))
+  }
+}
+
+if (dbExistsTable(con, "flights")) {
+  dbRemoveTable(con, "flights")
+  message("Tabela flights existente foi removida")
+}
+
+# Ler arquivo flights.csv com as colunas especificadas
+read_csv_chunked(
+  "flights.csv",
+  callback = SideEffectChunkCallback$new(lerDados),
+  chunk_size = 100000,
+  col_types = cols_only(
+    YEAR = col_integer(),
+    MONTH = col_integer(),
+    DAY = col_integer(),
+    AIRLINE = col_character(),
+    FLIGHT_NUMBER = col_integer(),
+    ORIGIN_AIRPORT = col_character(),
+    DESTINATION_AIRPORT = col_character(),
+    ARRIVAL_DELAY = col_double()
+  )
+)
+```
+
+
+```{r}
+# Consulta SQL para obter o tempo médio de atraso
+consulta <- "
+SELECT 
+    AVG(f.ARRIVAL_DELAY) as atraso_medio,
+    f.DESTINATION_AIRPORT as aeroporto_destino,
+    ap.AIRPORT as nome_aeroporto,
+    al.AIRLINE as nome_companhia
+FROM 
+    flights f
+JOIN 
+    airports ap ON f.DESTINATION_AIRPORT = ap.IATA_CODE
+JOIN 
+    airlines al ON f.AIRLINE = al.IATA_CODE
+GROUP BY 
+    f.DESTINATION_AIRPORT, ap.AIRPORT, al.AIRLINE
+ORDER BY 
+    atraso_medio DESC
+"
+
+# Executar a consulta
+resultado <- dbGetQuery(con, consulta)
+head(resultado)
+```
+
+
+```{r}
+# if (dbExistsTable(con, "flights")) {
+#   dbRemoveTable(con, "flights")
+#   message("Tabela flights existente foi removida")
+# }
+dbDisconnect(con)
+message("Processamento finalizado em: ", format(Sys.time(), "%d/%m/%Y %H:%M:%S"))
+```
+
