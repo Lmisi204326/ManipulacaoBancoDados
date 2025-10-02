@@ -26,7 +26,7 @@ aeroportos.head(2)
 ```{python}
 wdi = pl.read_excel("WDIEXCEL.xlsx", sheet_name = "Country",
                     columns = ["Short Name", "Region"])
-  
+wdi.head(2)
 ```
 
 
