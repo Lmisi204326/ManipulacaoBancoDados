@@ -1,0 +1,928 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.6.42">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>desafio11</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { display: inline-block; text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="desafio11_files/libs/clipboard/clipboard.min.js"></script>
+<script src="desafio11_files/libs/quarto-html/quarto.js"></script>
+<script src="desafio11_files/libs/quarto-html/popper.min.js"></script>
+<script src="desafio11_files/libs/quarto-html/tippy.umd.min.js"></script>
+<script src="desafio11_files/libs/quarto-html/anchor.min.js"></script>
+<link href="desafio11_files/libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="desafio11_files/libs/quarto-html/quarto-syntax-highlighting-2f5df379a58b258e96c21c0638c20c03.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="desafio11_files/libs/bootstrap/bootstrap.min.js"></script>
+<link href="desafio11_files/libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="desafio11_files/libs/bootstrap/bootstrap-1bc8a17f135ab3d594c857e9f48e611b.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+
+
+</head>
+
+<body class="fullcontent">
+
+<div id="quarto-content" class="page-columns page-rows-contents page-layout-article">
+
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">desafio11</h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<p>#1</p>
+<div id="c62f9229" class="cell" data-execution_count="1">
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> polars <span class="im">as</span> pl</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> warnings</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>warnings.filterwarnings(<span class="st">"ignore"</span>, category<span class="op">=</span><span class="pp">DeprecationWarning</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div id="9ea352f5" class="cell" data-execution_count="2">
+<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Definir os nomes das colunas na sequência indicada</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>colunas <span class="op">=</span> [</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>    <span class="st">'age'</span>, <span class="st">'workclass'</span>, <span class="st">'fnlwgt'</span>, <span class="st">'education'</span>, <span class="st">'education-num'</span>,</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>    <span class="st">'marital-status'</span>, <span class="st">'occupation'</span>, <span class="st">'relationship'</span>, <span class="st">'race'</span>, <span class="st">'sex'</span>,</span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>    <span class="st">'capital-gain'</span>, <span class="st">'capital-loss'</span>, <span class="st">'hours-per-week'</span>, <span class="st">'native-country'</span>, <span class="st">'income'</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>]</span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>dtypes <span class="op">=</span> {</span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>    <span class="st">'age'</span>: pl.Int64,</span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>    <span class="st">'workclass'</span>: pl.Categorical,</span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>    <span class="st">'fnlwgt'</span>: pl.Int64,</span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>    <span class="st">'education'</span>: pl.Categorical,</span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>    <span class="st">'education-num'</span>: pl.Int64,</span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a>    <span class="st">'marital-status'</span>: pl.Categorical,</span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a>    <span class="st">'occupation'</span>: pl.Categorical,</span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a>    <span class="st">'relationship'</span>: pl.Categorical,</span>
+<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a>    <span class="st">'race'</span>: pl.Categorical,</span>
+<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a>    <span class="st">'sex'</span>: pl.Categorical,</span>
+<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a>    <span class="st">'capital-gain'</span>: pl.Int64,</span>
+<span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a>    <span class="st">'capital-loss'</span>: pl.Int64,</span>
+<span id="cb2-21"><a href="#cb2-21" aria-hidden="true" tabindex="-1"></a>    <span class="st">'hours-per-week'</span>: pl.Int64,</span>
+<span id="cb2-22"><a href="#cb2-22" aria-hidden="true" tabindex="-1"></a>    <span class="st">'native-country'</span>: pl.Categorical,</span>
+<span id="cb2-23"><a href="#cb2-23" aria-hidden="true" tabindex="-1"></a>    <span class="st">'income'</span>: pl.Categorical</span>
+<span id="cb2-24"><a href="#cb2-24" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb2-25"><a href="#cb2-25" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-26"><a href="#cb2-26" aria-hidden="true" tabindex="-1"></a><span class="co"># Importar o arquivo CSV</span></span>
+<span id="cb2-27"><a href="#cb2-27" aria-hidden="true" tabindex="-1"></a>df <span class="op">=</span> pl.read_csv(</span>
+<span id="cb2-28"><a href="#cb2-28" aria-hidden="true" tabindex="-1"></a>    <span class="st">'renda_adulta.csv.gz'</span>,</span>
+<span id="cb2-29"><a href="#cb2-29" aria-hidden="true" tabindex="-1"></a>    has_header<span class="op">=</span><span class="va">False</span>,  <span class="co"># O arquivo não possui cabeçalho</span></span>
+<span id="cb2-30"><a href="#cb2-30" aria-hidden="true" tabindex="-1"></a>    new_columns<span class="op">=</span>colunas,  <span class="co"># Nomes das colunas</span></span>
+<span id="cb2-31"><a href="#cb2-31" aria-hidden="true" tabindex="-1"></a>    dtypes<span class="op">=</span>dtypes,  <span class="co"># Tipos das colunas</span></span>
+<span id="cb2-32"><a href="#cb2-32" aria-hidden="true" tabindex="-1"></a>    null_values<span class="op">=</span><span class="st">'?'</span>,  <span class="co"># '?' representa valores faltantes</span></span>
+<span id="cb2-33"><a href="#cb2-33" aria-hidden="true" tabindex="-1"></a>    truncate_ragged_lines<span class="op">=</span><span class="va">True</span>  <span class="co"># Trunca linhas com número irregular de colunas</span></span>
+<span id="cb2-34"><a href="#cb2-34" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div id="2f956180" class="cell" data-execution_count="3">
+<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Verificar as primeiras linhas do dataframe</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"Primeiras linhas:"</span>)</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(df.head())</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Verificar informações sobre o dataframe</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"</span><span class="ch">\n</span><span class="st">Informações do dataframe:"</span>)</span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"Shape: </span><span class="sc">{</span>df<span class="sc">.</span>shape<span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"Colunas: </span><span class="sc">{</span>df<span class="sc">.</span>columns<span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"Tipos: </span><span class="sc">{</span>df<span class="sc">.</span>dtypes<span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a><span class="co"># Verificar valores faltantes</span></span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"</span><span class="ch">\n</span><span class="st">Valores faltantes por coluna:"</span>)</span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(df.null_count())</span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a><span class="co"># Verificar estatísticas descritivas</span></span>
+<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"</span><span class="ch">\n</span><span class="st">Estatísticas descritivas:"</span>)</span>
+<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(df.describe())</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Primeiras linhas:
+shape: (5, 15)
+┌─────┬──────────────┬────────┬───────────┬───┬──────────────┬──────────────┬─────────────┬────────┐
+│ age ┆ workclass    ┆ fnlwgt ┆ education ┆ … ┆ capital-loss ┆ hours-per-we ┆ native-coun ┆ income │
+│ --- ┆ ---          ┆ ---    ┆ ---       ┆   ┆ ---          ┆ ek           ┆ try         ┆ ---    │
+│ i64 ┆ cat          ┆ i64    ┆ cat       ┆   ┆ i64          ┆ ---          ┆ ---         ┆ cat    │
+│     ┆              ┆        ┆           ┆   ┆              ┆ i64          ┆ cat         ┆        │
+╞═════╪══════════════╪════════╪═══════════╪═══╪══════════════╪══════════════╪═════════════╪════════╡
+│ 39  ┆ State-gov    ┆ 77516  ┆ Bachelors ┆ … ┆ 0            ┆ 40           ┆ United-Stat ┆ &lt;=50K  │
+│     ┆              ┆        ┆           ┆   ┆              ┆              ┆ es          ┆        │
+│ 50  ┆ Self-emp-not ┆ 83311  ┆ Bachelors ┆ … ┆ 0            ┆ 13           ┆ United-Stat ┆ &lt;=50K  │
+│     ┆ -inc         ┆        ┆           ┆   ┆              ┆              ┆ es          ┆        │
+│ 38  ┆ Private      ┆ 215646 ┆ HS-grad   ┆ … ┆ 0            ┆ 40           ┆ United-Stat ┆ &lt;=50K  │
+│     ┆              ┆        ┆           ┆   ┆              ┆              ┆ es          ┆        │
+│ 53  ┆ Private      ┆ 234721 ┆ 11th      ┆ … ┆ 0            ┆ 40           ┆ United-Stat ┆ &lt;=50K  │
+│     ┆              ┆        ┆           ┆   ┆              ┆              ┆ es          ┆        │
+│ 28  ┆ Private      ┆ 338409 ┆ Bachelors ┆ … ┆ 0            ┆ 40           ┆ Cuba        ┆ &lt;=50K  │
+└─────┴──────────────┴────────┴───────────┴───┴──────────────┴──────────────┴─────────────┴────────┘
+
+Informações do dataframe:
+Shape: (32561, 15)
+Colunas: ['age', 'workclass', 'fnlwgt', 'education', 'education-num', 'marital-status', 'occupation', 'relationship', 'race', 'sex', 'capital-gain', 'capital-loss', 'hours-per-week', 'native-country', 'income']
+Tipos: [Int64, Categorical, Int64, Categorical, Int64, Categorical, Categorical, Categorical, Categorical, Categorical, Int64, Int64, Int64, Categorical, Categorical]
+
+Valores faltantes por coluna:
+shape: (1, 15)
+┌─────┬───────────┬────────┬───────────┬───┬──────────────┬───────────────┬───────────────┬────────┐
+│ age ┆ workclass ┆ fnlwgt ┆ education ┆ … ┆ capital-loss ┆ hours-per-wee ┆ native-countr ┆ income │
+│ --- ┆ ---       ┆ ---    ┆ ---       ┆   ┆ ---          ┆ k             ┆ y             ┆ ---    │
+│ u32 ┆ u32       ┆ u32    ┆ u32       ┆   ┆ u32          ┆ ---           ┆ ---           ┆ u32    │
+│     ┆           ┆        ┆           ┆   ┆              ┆ u32           ┆ u32           ┆        │
+╞═════╪═══════════╪════════╪═══════════╪═══╪══════════════╪═══════════════╪═══════════════╪════════╡
+│ 0   ┆ 1836      ┆ 0      ┆ 0         ┆ … ┆ 0            ┆ 0             ┆ 583           ┆ 0      │
+└─────┴───────────┴────────┴───────────┴───┴──────────────┴───────────────┴───────────────┴────────┘
+
+Estatísticas descritivas:
+shape: (9, 16)
+┌────────────┬───────────┬───────────┬────────────┬───┬───────────┬───────────┬───────────┬────────┐
+│ statistic  ┆ age       ┆ workclass ┆ fnlwgt     ┆ … ┆ capital-l ┆ hours-per ┆ native-co ┆ income │
+│ ---        ┆ ---       ┆ ---       ┆ ---        ┆   ┆ oss       ┆ -week     ┆ untry     ┆ ---    │
+│ str        ┆ f64       ┆ str       ┆ f64        ┆   ┆ ---       ┆ ---       ┆ ---       ┆ str    │
+│            ┆           ┆           ┆            ┆   ┆ f64       ┆ f64       ┆ str       ┆        │
+╞════════════╪═══════════╪═══════════╪════════════╪═══╪═══════════╪═══════════╪═══════════╪════════╡
+│ count      ┆ 32561.0   ┆ 30725     ┆ 32561.0    ┆ … ┆ 32561.0   ┆ 32561.0   ┆ 31978     ┆ 32561  │
+│ null_count ┆ 0.0       ┆ 1836      ┆ 0.0        ┆ … ┆ 0.0       ┆ 0.0       ┆ 583       ┆ 0      │
+│ mean       ┆ 38.581647 ┆ null      ┆ 189778.366 ┆ … ┆ 87.30383  ┆ 40.437456 ┆ null      ┆ null   │
+│            ┆           ┆           ┆ 512        ┆   ┆           ┆           ┆           ┆        │
+│ std        ┆ 13.640433 ┆ null      ┆ 105549.977 ┆ … ┆ 402.96021 ┆ 12.347429 ┆ null      ┆ null   │
+│            ┆           ┆           ┆ 697        ┆   ┆ 9         ┆           ┆           ┆        │
+│ min        ┆ 17.0      ┆ null      ┆ 12285.0    ┆ … ┆ 0.0       ┆ 1.0       ┆ null      ┆ null   │
+│ 25%        ┆ 28.0      ┆ null      ┆ 117827.0   ┆ … ┆ 0.0       ┆ 40.0      ┆ null      ┆ null   │
+│ 50%        ┆ 37.0      ┆ null      ┆ 178356.0   ┆ … ┆ 0.0       ┆ 40.0      ┆ null      ┆ null   │
+│ 75%        ┆ 48.0      ┆ null      ┆ 237051.0   ┆ … ┆ 0.0       ┆ 45.0      ┆ null      ┆ null   │
+│ max        ┆ 90.0      ┆ null      ┆ 1.484705e6 ┆ … ┆ 4356.0    ┆ 99.0      ┆ null      ┆ null   │
+└────────────┴───────────┴───────────┴────────────┴───┴───────────┴───────────┴───────────┴────────┘</code></pre>
+</div>
+</div>
+<p>#2</p>
+<div id="621e31af" class="cell" data-execution_count="4">
+<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"="</span> <span class="op">*</span> <span class="dv">60</span>)</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"TIPOS DE CADA COLUNA"</span>)</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"="</span> <span class="op">*</span> <span class="dv">60</span>)</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> coluna, tipo <span class="kw">in</span> <span class="bu">zip</span>(df.columns, df.dtypes):</span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="ss">f"</span><span class="sc">{</span>coluna<span class="sc">:&lt;20}</span><span class="ss"> | </span><span class="sc">{</span>tipo<span class="sc">}</span><span class="ss">"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>============================================================
+TIPOS DE CADA COLUNA
+============================================================
+age                  | Int64
+workclass            | Categorical
+fnlwgt               | Int64
+education            | Categorical
+education-num        | Int64
+marital-status       | Categorical
+occupation           | Categorical
+relationship         | Categorical
+race                 | Categorical
+sex                  | Categorical
+capital-gain         | Int64
+capital-loss         | Int64
+hours-per-week       | Int64
+native-country       | Categorical
+income               | Categorical</code></pre>
+</div>
+</div>
+<p>#3</p>
+<div id="b9c8c3c7" class="cell" data-execution_count="5">
+<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"</span><span class="ch">\n</span><span class="st">"</span> <span class="op">+</span> <span class="st">"="</span> <span class="op">*</span> <span class="dv">60</span>)</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"DIMENSÕES DA TABELA DE DADOS"</span>)</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"="</span> <span class="op">*</span> <span class="dv">60</span>)</span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>dimensoes <span class="op">=</span> df.shape</span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"Número de linhas (registros) : </span><span class="sc">{</span>dimensoes[<span class="dv">0</span>]<span class="sc">:,}</span><span class="ss">"</span>)</span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"Número de colunas (variáveis): </span><span class="sc">{</span>dimensoes[<span class="dv">1</span>]<span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"Total de células             : </span><span class="sc">{</span>dimensoes[<span class="dv">0</span>] <span class="op">*</span> dimensoes[<span class="dv">1</span>]<span class="sc">:,}</span><span class="ss">"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+============================================================
+DIMENSÕES DA TABELA DE DADOS
+============================================================
+Número de linhas (registros) : 32,561
+Número de colunas (variáveis): 15
+Total de células             : 488,415</code></pre>
+</div>
+</div>
+<p>#4</p>
+<div id="98afba31" class="cell" data-execution_count="6">
+<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"="</span> <span class="op">*</span> <span class="dv">60</span>)</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"DISTRIBUIÇÃO DE RENDA"</span>)</span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"="</span> <span class="op">*</span> <span class="dv">60</span>)</span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>distribuicao_renda <span class="op">=</span> df.group_by(<span class="st">'income'</span>).agg(</span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>    pl.count().alias(<span class="st">'quantidade'</span>),</span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>    (pl.count() <span class="op">/</span> pl.<span class="bu">len</span>() <span class="op">*</span> <span class="dv">100</span>).alias(<span class="st">'percentual'</span>)</span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a>).sort(<span class="st">'income'</span>)</span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(distribuicao_renda)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>============================================================
+DISTRIBUIÇÃO DE RENDA
+============================================================
+shape: (2, 3)
+┌────────┬────────────┬────────────┐
+│ income ┆ quantidade ┆ percentual │
+│ ---    ┆ ---        ┆ ---        │
+│ cat    ┆ u32        ┆ f64        │
+╞════════╪════════════╪════════════╡
+│ &lt;=50K  ┆ 24720      ┆ 100.0      │
+│ &gt;50K   ┆ 7841       ┆ 100.0      │
+└────────┴────────────┴────────────┘</code></pre>
+</div>
+</div>
+<p>#5</p>
+<div id="688efa49" class="cell" data-execution_count="7">
+<div class="sourceCode cell-code" id="cb11"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>renda_longo <span class="op">=</span> df.select([<span class="st">'age'</span>, <span class="st">'workclass'</span>, <span class="st">'education'</span>, <span class="st">'income'</span>, </span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>                        <span class="st">'capital-gain'</span>, <span class="st">'capital-loss'</span>]).melt(</span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>    id_vars<span class="op">=</span>[<span class="st">'age'</span>, <span class="st">'workclass'</span>, <span class="st">'education'</span>, <span class="st">'income'</span>],</span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>    value_vars<span class="op">=</span>[<span class="st">'capital-gain'</span>, <span class="st">'capital-loss'</span>],</span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a>    variable_name<span class="op">=</span><span class="st">'tipo'</span>,</span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a>    value_name<span class="op">=</span><span class="st">'valor'</span></span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"Primeiras linhas do formato longo:"</span>)</span>
+<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(renda_longo.head(<span class="dv">10</span>))</span>
+<span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"</span><span class="ch">\n</span><span class="st">"</span> <span class="op">+</span> <span class="st">"="</span><span class="op">*</span><span class="dv">50</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Primeiras linhas do formato longo:
+shape: (10, 6)
+┌─────┬──────────────────┬───────────┬────────┬──────────────┬───────┐
+│ age ┆ workclass        ┆ education ┆ income ┆ tipo         ┆ valor │
+│ --- ┆ ---              ┆ ---       ┆ ---    ┆ ---          ┆ ---   │
+│ i64 ┆ cat              ┆ cat       ┆ cat    ┆ str          ┆ i64   │
+╞═════╪══════════════════╪═══════════╪════════╪══════════════╪═══════╡
+│ 39  ┆ State-gov        ┆ Bachelors ┆ &lt;=50K  ┆ capital-gain ┆ 2174  │
+│ 50  ┆ Self-emp-not-inc ┆ Bachelors ┆ &lt;=50K  ┆ capital-gain ┆ 0     │
+│ 38  ┆ Private          ┆ HS-grad   ┆ &lt;=50K  ┆ capital-gain ┆ 0     │
+│ 53  ┆ Private          ┆ 11th      ┆ &lt;=50K  ┆ capital-gain ┆ 0     │
+│ 28  ┆ Private          ┆ Bachelors ┆ &lt;=50K  ┆ capital-gain ┆ 0     │
+│ 37  ┆ Private          ┆ Masters   ┆ &lt;=50K  ┆ capital-gain ┆ 0     │
+│ 49  ┆ Private          ┆ 9th       ┆ &lt;=50K  ┆ capital-gain ┆ 0     │
+│ 52  ┆ Self-emp-not-inc ┆ HS-grad   ┆ &gt;50K   ┆ capital-gain ┆ 0     │
+│ 31  ┆ Private          ┆ Masters   ┆ &gt;50K   ┆ capital-gain ┆ 14084 │
+│ 42  ┆ Private          ┆ Bachelors ┆ &gt;50K   ┆ capital-gain ┆ 5178  │
+└─────┴──────────────────┴───────────┴────────┴──────────────┴───────┘
+
+==================================================</code></pre>
+</div>
+</div>
+<p>#6</p>
+<div id="a1270681" class="cell" data-execution_count="8">
+<div class="sourceCode cell-code" id="cb13"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a>medias_horas <span class="op">=</span> df.group_by(<span class="st">'income'</span>).agg(</span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>    pl.col(<span class="st">'hours-per-week'</span>).mean().alias(<span class="st">'media_horas_semana'</span>)</span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"Médias de horas trabalhadas por classe salarial:"</span>)</span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(medias_horas)</span>
+<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"</span><span class="ch">\n</span><span class="st">"</span> <span class="op">+</span> <span class="st">"="</span><span class="op">*</span><span class="dv">50</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Médias de horas trabalhadas por classe salarial:
+shape: (2, 2)
+┌────────┬────────────────────┐
+│ income ┆ media_horas_semana │
+│ ---    ┆ ---                │
+│ cat    ┆ f64                │
+╞════════╪════════════════════╡
+│ &gt;50K   ┆ 45.473026          │
+│ &lt;=50K  ┆ 38.84021           │
+└────────┴────────────────────┘
+
+==================================================</code></pre>
+</div>
+</div>
+<p>#7</p>
+<div id="052e543c" class="cell" data-execution_count="9">
+<div class="sourceCode cell-code" id="cb15"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a>pessoas_por_profissao <span class="op">=</span> df.group_by(<span class="st">'occupation'</span>).agg(</span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>    pl.count().alias(<span class="st">'quantidade_pessoas'</span>)</span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a>).sort(<span class="st">'quantidade_pessoas'</span>, descending<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"Quantidade de pessoas por profissão:"</span>)</span>
+<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(pessoas_por_profissao)</span>
+<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"</span><span class="ch">\n</span><span class="st">"</span> <span class="op">+</span> <span class="st">"="</span><span class="op">*</span><span class="dv">50</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Quantidade de pessoas por profissão:
+shape: (15, 2)
+┌─────────────────┬────────────────────┐
+│ occupation      ┆ quantidade_pessoas │
+│ ---             ┆ ---                │
+│ cat             ┆ u32                │
+╞═════════════════╪════════════════════╡
+│ Prof-specialty  ┆ 4140               │
+│ Craft-repair    ┆ 4099               │
+│ Exec-managerial ┆ 4066               │
+│ Adm-clerical    ┆ 3770               │
+│ Sales           ┆ 3650               │
+│ …               ┆ …                  │
+│ Farming-fishing ┆ 994                │
+│ Tech-support    ┆ 928                │
+│ Protective-serv ┆ 649                │
+│ Priv-house-serv ┆ 149                │
+│ Armed-Forces    ┆ 9                  │
+└─────────────────┴────────────────────┘
+
+==================================================</code></pre>
+</div>
+</div>
+<p>#8</p>
+<div id="40818c43" class="cell" data-execution_count="10">
+<div class="sourceCode cell-code" id="cb17"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> matplotlib.pyplot <span class="im">as</span> plt</span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Preparando dados para o gráfico</span></span>
+<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a>dados_grafico <span class="op">=</span> medias_horas.to_pandas()</span>
+<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-6"><a href="#cb17-6" aria-hidden="true" tabindex="-1"></a>plt.figure(figsize<span class="op">=</span>(<span class="dv">10</span>, <span class="dv">6</span>))</span>
+<span id="cb17-7"><a href="#cb17-7" aria-hidden="true" tabindex="-1"></a>plt.bar(dados_grafico[<span class="st">'income'</span>], dados_grafico[<span class="st">'media_horas_semana'</span>], </span>
+<span id="cb17-8"><a href="#cb17-8" aria-hidden="true" tabindex="-1"></a>        color<span class="op">=</span>[<span class="st">'skyblue'</span>, <span class="st">'lightcoral'</span>])</span>
+<span id="cb17-9"><a href="#cb17-9" aria-hidden="true" tabindex="-1"></a>plt.title(<span class="st">'Número Médio de Horas Trabalhadas por Semana por Classe Salarial'</span>)</span>
+<span id="cb17-10"><a href="#cb17-10" aria-hidden="true" tabindex="-1"></a>plt.xlabel(<span class="st">'Classe Salarial'</span>)</span>
+<span id="cb17-11"><a href="#cb17-11" aria-hidden="true" tabindex="-1"></a>plt.ylabel(<span class="st">'Média de Horas por Semana'</span>)</span>
+<span id="cb17-12"><a href="#cb17-12" aria-hidden="true" tabindex="-1"></a>plt.grid(axis<span class="op">=</span><span class="st">'y'</span>, alpha<span class="op">=</span><span class="fl">0.3</span>)</span>
+<span id="cb17-13"><a href="#cb17-13" aria-hidden="true" tabindex="-1"></a>plt.show()</span>
+<span id="cb17-14"><a href="#cb17-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-15"><a href="#cb17-15" aria-hidden="true" tabindex="-1"></a><span class="co"># 8. Desafio: Evidência de discriminação salarial entre gêneros</span></span>
+<span id="cb17-16"><a href="#cb17-16" aria-hidden="true" tabindex="-1"></a>discriminacao_genero <span class="op">=</span> df.group_by([<span class="st">'sex'</span>, <span class="st">'income'</span>]).agg(</span>
+<span id="cb17-17"><a href="#cb17-17" aria-hidden="true" tabindex="-1"></a>    pl.count().alias(<span class="st">'quantidade'</span>),</span>
+<span id="cb17-18"><a href="#cb17-18" aria-hidden="true" tabindex="-1"></a>    pl.col(<span class="st">'hours-per-week'</span>).mean().alias(<span class="st">'media_horas'</span>)</span>
+<span id="cb17-19"><a href="#cb17-19" aria-hidden="true" tabindex="-1"></a>).sort(<span class="st">'sex'</span>)</span>
+<span id="cb17-20"><a href="#cb17-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-21"><a href="#cb17-21" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"Análise de discriminação salarial por gênero:"</span>)</span>
+<span id="cb17-22"><a href="#cb17-22" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(discriminacao_genero)</span>
+<span id="cb17-23"><a href="#cb17-23" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-24"><a href="#cb17-24" aria-hidden="true" tabindex="-1"></a><span class="co"># Calculando proporções por gênero</span></span>
+<span id="cb17-25"><a href="#cb17-25" aria-hidden="true" tabindex="-1"></a>total_por_genero <span class="op">=</span> df.group_by(<span class="st">'sex'</span>).agg(pl.count().alias(<span class="st">'total'</span>))</span>
+<span id="cb17-26"><a href="#cb17-26" aria-hidden="true" tabindex="-1"></a>discriminacao_com_proporcao <span class="op">=</span> discriminacao_genero.join(</span>
+<span id="cb17-27"><a href="#cb17-27" aria-hidden="true" tabindex="-1"></a>    total_por_genero, on<span class="op">=</span><span class="st">'sex'</span></span>
+<span id="cb17-28"><a href="#cb17-28" aria-hidden="true" tabindex="-1"></a>).with_columns(</span>
+<span id="cb17-29"><a href="#cb17-29" aria-hidden="true" tabindex="-1"></a>    (pl.col(<span class="st">'quantidade'</span>) <span class="op">/</span> pl.col(<span class="st">'total'</span>) <span class="op">*</span> <span class="dv">100</span>).alias(<span class="st">'percentual'</span>)</span>
+<span id="cb17-30"><a href="#cb17-30" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb17-31"><a href="#cb17-31" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-32"><a href="#cb17-32" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"</span><span class="ch">\n</span><span class="st">Proporções por gênero e classe salarial:"</span>)</span>
+<span id="cb17-33"><a href="#cb17-33" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(discriminacao_com_proporcao)</span>
+<span id="cb17-34"><a href="#cb17-34" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-35"><a href="#cb17-35" aria-hidden="true" tabindex="-1"></a><span class="co"># Teste estatístico simples - diferença de proporções</span></span>
+<span id="cb17-36"><a href="#cb17-36" aria-hidden="true" tabindex="-1"></a>homens_alta_renda <span class="op">=</span> discriminacao_com_proporcao.<span class="bu">filter</span>(</span>
+<span id="cb17-37"><a href="#cb17-37" aria-hidden="true" tabindex="-1"></a>    (pl.col(<span class="st">'sex'</span>) <span class="op">==</span> <span class="st">'Male'</span>) <span class="op">&amp;</span> (pl.col(<span class="st">'income'</span>) <span class="op">==</span> <span class="st">'&gt;50K'</span>)</span>
+<span id="cb17-38"><a href="#cb17-38" aria-hidden="true" tabindex="-1"></a>)[<span class="st">'percentual'</span>][<span class="dv">0</span>]</span>
+<span id="cb17-39"><a href="#cb17-39" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-40"><a href="#cb17-40" aria-hidden="true" tabindex="-1"></a>mulheres_alta_renda <span class="op">=</span> discriminacao_com_proporcao.<span class="bu">filter</span>(</span>
+<span id="cb17-41"><a href="#cb17-41" aria-hidden="true" tabindex="-1"></a>    (pl.col(<span class="st">'sex'</span>) <span class="op">==</span> <span class="st">'Female'</span>) <span class="op">&amp;</span> (pl.col(<span class="st">'income'</span>) <span class="op">==</span> <span class="st">'&gt;50K'</span>)</span>
+<span id="cb17-42"><a href="#cb17-42" aria-hidden="true" tabindex="-1"></a>)[<span class="st">'percentual'</span>][<span class="dv">0</span>]</span>
+<span id="cb17-43"><a href="#cb17-43" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-44"><a href="#cb17-44" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"</span><span class="ch">\n</span><span class="ss">Diferença na proporção de alta renda:"</span>)</span>
+<span id="cb17-45"><a href="#cb17-45" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"Homens: </span><span class="sc">{</span>homens_alta_renda<span class="sc">:.2f}</span><span class="ss">%"</span>)</span>
+<span id="cb17-46"><a href="#cb17-46" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"Mulheres: </span><span class="sc">{</span>mulheres_alta_renda<span class="sc">:.2f}</span><span class="ss">%"</span>)</span>
+<span id="cb17-47"><a href="#cb17-47" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"Diferença: </span><span class="sc">{</span>homens_alta_renda <span class="op">-</span> mulheres_alta_renda<span class="sc">:.2f}</span><span class="ss">%"</span>)</span>
+<span id="cb17-48"><a href="#cb17-48" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-49"><a href="#cb17-49" aria-hidden="true" tabindex="-1"></a><span class="co"># Gráfico de discriminação por gênero</span></span>
+<span id="cb17-50"><a href="#cb17-50" aria-hidden="true" tabindex="-1"></a>dados_discriminacao <span class="op">=</span> discriminacao_com_proporcao.to_pandas()</span>
+<span id="cb17-51"><a href="#cb17-51" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-52"><a href="#cb17-52" aria-hidden="true" tabindex="-1"></a>plt.figure(figsize<span class="op">=</span>(<span class="dv">12</span>, <span class="dv">6</span>))</span>
+<span id="cb17-53"><a href="#cb17-53" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> i, sexo <span class="kw">in</span> <span class="bu">enumerate</span>(dados_discriminacao[<span class="st">'sex'</span>].unique()):</span>
+<span id="cb17-54"><a href="#cb17-54" aria-hidden="true" tabindex="-1"></a>    dados_sexo <span class="op">=</span> dados_discriminacao[dados_discriminacao[<span class="st">'sex'</span>] <span class="op">==</span> sexo]</span>
+<span id="cb17-55"><a href="#cb17-55" aria-hidden="true" tabindex="-1"></a>    plt.bar([<span class="ss">f"</span><span class="sc">{</span>sexo<span class="sc">}</span><span class="ch">\n</span><span class="sc">{</span>renda<span class="sc">}</span><span class="ss">"</span> <span class="cf">for</span> renda <span class="kw">in</span> dados_sexo[<span class="st">'income'</span>]], </span>
+<span id="cb17-56"><a href="#cb17-56" aria-hidden="true" tabindex="-1"></a>            dados_sexo[<span class="st">'percentual'</span>], </span>
+<span id="cb17-57"><a href="#cb17-57" aria-hidden="true" tabindex="-1"></a>            alpha<span class="op">=</span><span class="fl">0.7</span>, </span>
+<span id="cb17-58"><a href="#cb17-58" aria-hidden="true" tabindex="-1"></a>            label<span class="op">=</span>sexo)</span>
+<span id="cb17-59"><a href="#cb17-59" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-60"><a href="#cb17-60" aria-hidden="true" tabindex="-1"></a>plt.title(<span class="st">'Distribuição Salarial por Gênero'</span>)</span>
+<span id="cb17-61"><a href="#cb17-61" aria-hidden="true" tabindex="-1"></a>plt.xlabel(<span class="st">'Gênero e Classe Salarial'</span>)</span>
+<span id="cb17-62"><a href="#cb17-62" aria-hidden="true" tabindex="-1"></a>plt.ylabel(<span class="st">'Percentual (%)'</span>)</span>
+<span id="cb17-63"><a href="#cb17-63" aria-hidden="true" tabindex="-1"></a>plt.legend()</span>
+<span id="cb17-64"><a href="#cb17-64" aria-hidden="true" tabindex="-1"></a>plt.grid(axis<span class="op">=</span><span class="st">'y'</span>, alpha<span class="op">=</span><span class="fl">0.3</span>)</span>
+<span id="cb17-65"><a href="#cb17-65" aria-hidden="true" tabindex="-1"></a>plt.xticks(rotation<span class="op">=</span><span class="dv">45</span>)</span>
+<span id="cb17-66"><a href="#cb17-66" aria-hidden="true" tabindex="-1"></a>plt.tight_layout()</span>
+<span id="cb17-67"><a href="#cb17-67" aria-hidden="true" tabindex="-1"></a>plt.show()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="desafio11_files/figure-html/cell-11-output-1.png" class="img-fluid figure-img"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Análise de discriminação salarial por gênero:
+shape: (4, 4)
+┌────────┬────────┬────────────┬─────────────┐
+│ sex    ┆ income ┆ quantidade ┆ media_horas │
+│ ---    ┆ ---    ┆ ---        ┆ ---         │
+│ cat    ┆ cat    ┆ u32        ┆ f64         │
+╞════════╪════════╪════════════╪═════════════╡
+│ Female ┆ &lt;=50K  ┆ 9592       ┆ 35.916701   │
+│ Female ┆ &gt;50K   ┆ 1179       ┆ 40.426633   │
+│ Male   ┆ &gt;50K   ┆ 6662       ┆ 46.366106   │
+│ Male   ┆ &lt;=50K  ┆ 15128      ┆ 40.693879   │
+└────────┴────────┴────────────┴─────────────┘
+
+Proporções por gênero e classe salarial:
+shape: (4, 6)
+┌────────┬────────┬────────────┬─────────────┬───────┬────────────┐
+│ sex    ┆ income ┆ quantidade ┆ media_horas ┆ total ┆ percentual │
+│ ---    ┆ ---    ┆ ---        ┆ ---         ┆ ---   ┆ ---        │
+│ cat    ┆ cat    ┆ u32        ┆ f64         ┆ u32   ┆ f64        │
+╞════════╪════════╪════════════╪═════════════╪═══════╪════════════╡
+│ Female ┆ &lt;=50K  ┆ 9592       ┆ 35.916701   ┆ 10771 ┆ 89.053941  │
+│ Female ┆ &gt;50K   ┆ 1179       ┆ 40.426633   ┆ 10771 ┆ 10.946059  │
+│ Male   ┆ &gt;50K   ┆ 6662       ┆ 46.366106   ┆ 21790 ┆ 30.573658  │
+│ Male   ┆ &lt;=50K  ┆ 15128      ┆ 40.693879   ┆ 21790 ┆ 69.426342  │
+└────────┴────────┴────────────┴─────────────┴───────┴────────────┘
+
+Diferença na proporção de alta renda:
+Homens: 30.57%
+Mulheres: 10.95%
+Diferença: 19.63%</code></pre>
+</div>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="desafio11_files/figure-html/cell-11-output-3.png" class="img-fluid figure-img"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>#9</p>
+<p>Cerca de 89% das mulheres recebem menos de 50k, enquanto os homens 69% rebem menos de 50k, isso indica uma diferença salarial entre os dois sexos. Já em relação as horas trabalhadas as mulheres trabalam cercam de 5 horas a menos por semana, essas duas informações indicam que há sim um discriminação entre homens e mulheres no mercado de trabalho.</p>
+<pre class="{r}"><code>Sys.time()</code></pre>
+<pre><code>[1] "2025-10-07 11:25:04 -03"</code></pre>
+
+</main>
+<!-- /main column -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const onCopySuccess = function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  }
+  const getTextToCopy = function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+    text: getTextToCopy
+  });
+  clipboard.on('success', onCopySuccess);
+  if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+    const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+      text: getTextToCopy,
+      container: window.document.getElementById('quarto-embedded-source-code-modal')
+    });
+    clipboardModal.on('success', onCopySuccess);
+  }
+    var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+    var mailtoRegex = new RegExp(/^mailto:/);
+      var filterRegex = new RegExp('/' + window.location.host + '/');
+    var isInternal = (href) => {
+        return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+    }
+    // Inspect non-navigation links and adorn them if external
+ 	var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+    for (var i=0; i<links.length; i++) {
+      const link = links[i];
+      if (!isInternal(link.href)) {
+        // undo the damage that might have been done by quarto-nav.js in the case of
+        // links that we want to consider external
+        if (link.dataset.originalHref !== undefined) {
+          link.href = link.dataset.originalHref;
+        }
+      }
+    }
+  function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+    const config = {
+      allowHTML: true,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start',
+    };
+    if (contentFn) {
+      config.content = contentFn;
+    }
+    if (onTriggerFn) {
+      config.onTrigger = onTriggerFn;
+    }
+    if (onUntriggerFn) {
+      config.onUntrigger = onUntriggerFn;
+    }
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      if (note) {
+        return note.innerHTML;
+      } else {
+        return "";
+      }
+    });
+  }
+  const xrefs = window.document.querySelectorAll('a.quarto-xref');
+  const processXRef = (id, note) => {
+    // Strip column container classes
+    const stripColumnClz = (el) => {
+      el.classList.remove("page-full", "page-columns");
+      if (el.children) {
+        for (const child of el.children) {
+          stripColumnClz(child);
+        }
+      }
+    }
+    stripColumnClz(note)
+    if (id === null || id.startsWith('sec-')) {
+      // Special case sections, only their first couple elements
+      const container = document.createElement("div");
+      if (note.children && note.children.length > 2) {
+        container.appendChild(note.children[0].cloneNode(true));
+        for (let i = 1; i < note.children.length; i++) {
+          const child = note.children[i];
+          if (child.tagName === "P" && child.innerText === "") {
+            continue;
+          } else {
+            container.appendChild(child.cloneNode(true));
+            break;
+          }
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(container);
+        }
+        return container.innerHTML
+      } else {
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        return note.innerHTML;
+      }
+    } else {
+      // Remove any anchor links if they are present
+      const anchorLink = note.querySelector('a.anchorjs-link');
+      if (anchorLink) {
+        anchorLink.remove();
+      }
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(note);
+      }
+      if (note.classList.contains("callout")) {
+        return note.outerHTML;
+      } else {
+        return note.innerHTML;
+      }
+    }
+  }
+  for (var i=0; i<xrefs.length; i++) {
+    const xref = xrefs[i];
+    tippyHover(xref, undefined, function(instance) {
+      instance.disable();
+      let url = xref.getAttribute('href');
+      let hash = undefined; 
+      if (url.startsWith('#')) {
+        hash = url;
+      } else {
+        try { hash = new URL(url).hash; } catch {}
+      }
+      if (hash) {
+        const id = hash.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note !== null) {
+          try {
+            const html = processXRef(id, note.cloneNode(true));
+            instance.setContent(html);
+          } finally {
+            instance.enable();
+            instance.show();
+          }
+        } else {
+          // See if we can fetch this
+          fetch(url.split('#')[0])
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.getElementById(id);
+            if (note !== null) {
+              const html = processXRef(id, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      } else {
+        // See if we can fetch a full url (with no hash to target)
+        // This is a special case and we should probably do some content thinning / targeting
+        fetch(url)
+        .then(res => res.text())
+        .then(html => {
+          const parser = new DOMParser();
+          const htmlDoc = parser.parseFromString(html, "text/html");
+          const note = htmlDoc.querySelector('main.content');
+          if (note !== null) {
+            // This should only happen for chapter cross references
+            // (since there is no id in the URL)
+            // remove the first header
+            if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+              note.children[0].remove();
+            }
+            const html = processXRef(null, note);
+            instance.setContent(html);
+          } 
+        }).finally(() => {
+          instance.enable();
+          instance.show();
+        });
+      }
+    }, function(instance) {
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            div.style.left = 0;
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+        // Handle positioning of the toggle
+    window.addEventListener(
+      "resize",
+      throttle(() => {
+        elRect = undefined;
+        if (selectedAnnoteEl) {
+          selectCodeLines(selectedAnnoteEl);
+        }
+      }, 10)
+    );
+    function throttle(fn, ms) {
+    let throttle = false;
+    let timer;
+      return (...args) => {
+        if(!throttle) { // first call gets through
+            fn.apply(this, args);
+            throttle = true;
+        } else { // all the others get throttled
+            if(timer) clearTimeout(timer); // cancel #2
+            timer = setTimeout(() => {
+              fn.apply(this, args);
+              timer = throttle = false;
+            }, ms);
+        }
+      };
+    }
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+</div> <!-- /content -->
+
+
+
+
+</body></html>

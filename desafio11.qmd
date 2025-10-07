@@ -1,0 +1,231 @@
+---
+title: "desafio11"
+format: html
+editor: visual
+engine: jupyter
+---
+
+#1
+
+```{python}
+import polars as pl
+import warnings
+warnings.filterwarnings("ignore", category=DeprecationWarning)
+```
+
+```{python}
+# Definir os nomes das colunas na sequência indicada
+colunas = [
+    'age', 'workclass', 'fnlwgt', 'education', 'education-num',
+    'marital-status', 'occupation', 'relationship', 'race', 'sex',
+    'capital-gain', 'capital-loss', 'hours-per-week', 'native-country', 'income'
+]
+
+dtypes = {
+    'age': pl.Int64,
+    'workclass': pl.Categorical,
+    'fnlwgt': pl.Int64,
+    'education': pl.Categorical,
+    'education-num': pl.Int64,
+    'marital-status': pl.Categorical,
+    'occupation': pl.Categorical,
+    'relationship': pl.Categorical,
+    'race': pl.Categorical,
+    'sex': pl.Categorical,
+    'capital-gain': pl.Int64,
+    'capital-loss': pl.Int64,
+    'hours-per-week': pl.Int64,
+    'native-country': pl.Categorical,
+    'income': pl.Categorical
+}
+
+# Importar o arquivo CSV
+df = pl.read_csv(
+    'renda_adulta.csv.gz',
+    has_header=False,  # O arquivo não possui cabeçalho
+    new_columns=colunas,  # Nomes das colunas
+    dtypes=dtypes,  # Tipos das colunas
+    null_values='?',  # '?' representa valores faltantes
+    truncate_ragged_lines=True  # Trunca linhas com número irregular de colunas
+)
+```
+
+```{python}
+# Verificar as primeiras linhas do dataframe
+print("Primeiras linhas:")
+print(df.head())
+
+# Verificar informações sobre o dataframe
+print("\nInformações do dataframe:")
+print(f"Shape: {df.shape}")
+print(f"Colunas: {df.columns}")
+print(f"Tipos: {df.dtypes}")
+
+# Verificar valores faltantes
+print("\nValores faltantes por coluna:")
+print(df.null_count())
+
+# Verificar estatísticas descritivas
+print("\nEstatísticas descritivas:")
+print(df.describe())
+```
+
+#2
+
+```{python}
+print("=" * 60)
+print("TIPOS DE CADA COLUNA")
+print("=" * 60)
+
+for coluna, tipo in zip(df.columns, df.dtypes):
+    print(f"{coluna:<20} | {tipo}")
+```
+
+#3
+
+```{python}
+print("\n" + "=" * 60)
+print("DIMENSÕES DA TABELA DE DADOS")
+print("=" * 60)
+
+dimensoes = df.shape
+print(f"Número de linhas (registros) : {dimensoes[0]:,}")
+print(f"Número de colunas (variáveis): {dimensoes[1]}")
+print(f"Total de células             : {dimensoes[0] * dimensoes[1]:,}")
+```
+
+#4
+
+```{python}
+print("=" * 60)
+print("DISTRIBUIÇÃO DE RENDA")
+print("=" * 60)
+
+distribuicao_renda = df.group_by('income').agg(
+    pl.count().alias('quantidade'),
+    (pl.count() / pl.len() * 100).alias('percentual')
+).sort('income')
+
+print(distribuicao_renda)
+```
+
+#5
+
+```{python}
+renda_longo = df.select(['age', 'workclass', 'education', 'income', 
+                        'capital-gain', 'capital-loss']).melt(
+    id_vars=['age', 'workclass', 'education', 'income'],
+    value_vars=['capital-gain', 'capital-loss'],
+    variable_name='tipo',
+    value_name='valor'
+)
+print("Primeiras linhas do formato longo:")
+print(renda_longo.head(10))
+print("\n" + "="*50)
+```
+
+#6
+
+```{python}
+medias_horas = df.group_by('income').agg(
+    pl.col('hours-per-week').mean().alias('media_horas_semana')
+)
+print("Médias de horas trabalhadas por classe salarial:")
+print(medias_horas)
+print("\n" + "="*50)
+```
+
+#7
+
+```{python}
+pessoas_por_profissao = df.group_by('occupation').agg(
+    pl.count().alias('quantidade_pessoas')
+).sort('quantidade_pessoas', descending=True)
+print("Quantidade de pessoas por profissão:")
+print(pessoas_por_profissao)
+print("\n" + "="*50)
+```
+
+#8
+
+```{python}
+import matplotlib.pyplot as plt
+
+# Preparando dados para o gráfico
+dados_grafico = medias_horas.to_pandas()
+
+plt.figure(figsize=(10, 6))
+plt.bar(dados_grafico['income'], dados_grafico['media_horas_semana'], 
+        color=['skyblue', 'lightcoral'])
+plt.title('Número Médio de Horas Trabalhadas por Semana por Classe Salarial')
+plt.xlabel('Classe Salarial')
+plt.ylabel('Média de Horas por Semana')
+plt.grid(axis='y', alpha=0.3)
+plt.show()
+
+# 8. Desafio: Evidência de discriminação salarial entre gêneros
+discriminacao_genero = df.group_by(['sex', 'income']).agg(
+    pl.count().alias('quantidade'),
+    pl.col('hours-per-week').mean().alias('media_horas')
+).sort('sex')
+
+print("Análise de discriminação salarial por gênero:")
+print(discriminacao_genero)
+
+# Calculando proporções por gênero
+total_por_genero = df.group_by('sex').agg(pl.count().alias('total'))
+discriminacao_com_proporcao = discriminacao_genero.join(
+    total_por_genero, on='sex'
+).with_columns(
+    (pl.col('quantidade') / pl.col('total') * 100).alias('percentual')
+)
+
+print("\nProporções por gênero e classe salarial:")
+print(discriminacao_com_proporcao)
+
+# Teste estatístico simples - diferença de proporções
+homens_alta_renda = discriminacao_com_proporcao.filter(
+    (pl.col('sex') == 'Male') & (pl.col('income') == '>50K')
+)['percentual'][0]
+
+mulheres_alta_renda = discriminacao_com_proporcao.filter(
+    (pl.col('sex') == 'Female') & (pl.col('income') == '>50K')
+)['percentual'][0]
+
+print(f"\nDiferença na proporção de alta renda:")
+print(f"Homens: {homens_alta_renda:.2f}%")
+print(f"Mulheres: {mulheres_alta_renda:.2f}%")
+print(f"Diferença: {homens_alta_renda - mulheres_alta_renda:.2f}%")
+
+# Gráfico de discriminação por gênero
+dados_discriminacao = discriminacao_com_proporcao.to_pandas()
+
+plt.figure(figsize=(12, 6))
+for i, sexo in enumerate(dados_discriminacao['sex'].unique()):
+    dados_sexo = dados_discriminacao[dados_discriminacao['sex'] == sexo]
+    plt.bar([f"{sexo}\n{renda}" for renda in dados_sexo['income']], 
+            dados_sexo['percentual'], 
+            alpha=0.7, 
+            label=sexo)
+
+plt.title('Distribuição Salarial por Gênero')
+plt.xlabel('Gênero e Classe Salarial')
+plt.ylabel('Percentual (%)')
+plt.legend()
+plt.grid(axis='y', alpha=0.3)
+plt.xticks(rotation=45)
+plt.tight_layout()
+plt.show()
+```
+
+#9
+
+Cerca de 89% das mulheres recebem menos de 50k, enquanto os homens 69% rebem menos de 50k, isso indica uma diferença salarial entre os dois sexos. Já em relação as horas trabalhadas as mulheres trabalam cercam de 5 horas a menos por semana, essas duas informações indicam que há sim um discriminação entre homens e mulheres no mercado de trabalho.
+
+```{r}
+Sys.time()
+```
+
+```         
+[1] "2025-10-07 11:25:04 -03"
+```
