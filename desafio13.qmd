@@ -1,0 +1,141 @@
+---
+title: "desafio13"
+format: html
+editor: visual
+---
+
+
+
+
+```{python}
+import sqlite3
+import polars as pl
+import pandas as pd
+import csv
+import gzip
+
+# Criar conexão com o banco de dados
+conn = sqlite3.connect('movies.sqlite3')
+
+
+print("Carregando dados da tabela basics...")
+basics_df = pd.read_csv('title.basics0.tsv.gz', sep='\t', compression='gzip', na_values='\\N')
+basics_df.to_sql('basics', conn, if_exists='replace', index=False)
+
+# Carregar e criar tabela ratings
+print("Carregando dados da tabela ratings...")
+ratings_df = pd.read_csv('title.ratings.tsv.gz', sep='\t', compression='gzip', na_values='\\N')
+ratings_df.to_sql('ratings', conn, if_exists='replace', index=False)
+
+print("Carregando dados da tabela principals com tipos otimizados...")
+
+# Definir tipos de dados para economizar memória
+dtype_optimized = {
+    'tconst': 'string',
+    'nconst': 'string', 
+    'category': 'category',
+    'job': 'category',
+    'characters': 'string'
+}
+
+# Usar apenas colunas necessárias se possível
+usecols = ['tconst', 'nconst', 'category', 'job', 'characters']
+
+chunk_size = 100000
+
+for chunk in pd.read_csv('title.principals0.tsv.gz',
+                        sep='\t',
+                        compression='gzip',
+                        na_values='\\N',
+                        dtype=dtype_optimized,
+                        usecols=usecols,
+                        chunksize=chunk_size,
+                        low_memory=False):
+    
+    if 'chunks_processed' not in locals():
+        chunks_processed = 0
+        chunk.to_sql('principals', conn, if_exists='replace', index=False)
+    else:
+        chunk.to_sql('principals', conn, if_exists='append', index=False)
+    
+    chunks_processed += 1
+
+print(f"Tabela principals criada com {chunks_processed} chunks")
+```
+
+
+```{python}
+conn = sqlite3.connect("movies.sqlite3")
+
+
+query1 = """
+SELECT 
+    b.primaryTitle AS titulo,
+    b.startYear AS ano,
+    r.averageRating AS nota,
+    r.numVotes AS votos
+FROM basics b
+JOIN ratings r ON b.tconst = r.tconst
+WHERE b.titleType = 'movie'
+ORDER BY r.averageRating DESC, r.numVotes DESC
+LIMIT 5;
+"""
+
+top5_filmes = pl.read_database(query=query1, connection=conn)
+print("🎥 Top 5 filmes com maiores notas:")
+print(top5_filmes)
+print("\n")
+```
+
+
+```{python}
+query2 = """
+SELECT b.genres
+FROM basics b
+JOIN ratings r ON b.tconst = r.tconst
+WHERE b.titleType = 'movie' AND r.averageRating > 8;
+"""
+
+generos_df = pl.read_database(query=query2, connection=conn)
+
+# Divide e conta frequências
+genero_freq = (
+    generos_df
+    .with_columns(pl.col("genres").str.split(","))
+    .explode("genres")
+    .group_by("genres")
+    .count()
+    .sort("count", descending=True)
+)
+
+print("🎭 Gênero mais frequente entre filmes com nota > 8:")
+print(genero_freq.head(5))
+print("\n")
+```
+
+
+```{python}
+query3 = """
+SELECT p.nconst, COUNT(*) AS num_filmes
+FROM principals p
+JOIN basics b ON p.tconst = b.tconst
+JOIN ratings r ON b.tconst = r.tconst
+WHERE b.titleType = 'movie'
+  AND r.averageRating > 7.5
+  AND p.category IN ('actor', 'actress')
+GROUP BY p.nconst
+ORDER BY num_filmes DESC
+LIMIT 3;
+"""
+
+atores_top3 = pl.read_database(query=query3, connection=conn)
+print("👩‍🎤 Top 3 atores/atrizes com mais filmes > 7.5:")
+print(atores_top3)
+conn.close()
+```
+
+```{r}
+Sys.time()
+```
+
+
